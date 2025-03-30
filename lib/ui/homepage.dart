@@ -1,6 +1,7 @@
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -18,16 +19,16 @@ class _HomePageState extends State<HomePage> {
   ];
 
   final List<Map<String, dynamic>> products = [
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg', 'name': ' One piece', 'price': '#1'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/65f92e6e315a931ef872da4b312442b8.jpg', 'name': 'Solo leveling', 'price': '#2'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2cbe94bcbf18f0f3c205325d4e234d16.jpg', 'name': 'Dragon ball', 'price': '#3'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2bbe7ece956bbefc6f385a7a447c182c.jpg', 'name': 'Sakamoto days', 'price': '#4'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c7346b9cd930d501d2b6b40770b2b1d0.jpg', 'name': 'Apothecary dairies', 'price': '#5'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c2a246a281ee33d66635458797ce76cf.jpg', 'name': 'Happy marriage', 'price': '#6'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/ebb78f8688b59abf0409b8799159127a.jpg', 'name': 'Arifureta', 'price': '#7'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/b8169841c47c010d664f293fcec036fb.jpg', 'name': 'Blue box', 'price': '#8'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/a8b56a7589ff9edb6c86977c31e27a06.jpg', 'name': 'Dandan', 'price': '#9'},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/d9bb23228e5a641b5a3e9386382dae3a.jpg', 'name': 'Wind breaker', 'price': '#10'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg', 'name': ' One piece', 'rating': '#1'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/65f92e6e315a931ef872da4b312442b8.jpg', 'name': 'Solo leveling', 'rating': '#2'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2cbe94bcbf18f0f3c205325d4e234d16.jpg', 'name': 'Dragon ball', 'rating': '#3'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2bbe7ece956bbefc6f385a7a447c182c.jpg', 'name': 'Sakamoto days', 'rating': '#4'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c7346b9cd930d501d2b6b40770b2b1d0.jpg', 'name': 'Apothecary dairies', 'rating': '#5'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c2a246a281ee33d66635458797ce76cf.jpg', 'name': 'Happy marriage', 'rating': '#6'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/ebb78f8688b59abf0409b8799159127a.jpg', 'name': 'Arifureta', 'rating': '#7'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/b8169841c47c010d664f293fcec036fb.jpg', 'name': 'Blue box', 'rating': '#8'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/a8b56a7589ff9edb6c86977c31e27a06.jpg', 'name': 'Dandan', 'rating': '#9'},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/d9bb23228e5a641b5a3e9386382dae3a.jpg', 'name': 'Wind breaker', 'rating': '#10'},
 
   ];
 
@@ -101,7 +102,7 @@ class _HomePageState extends State<HomePage> {
                     return ProductCard(
                       image: products[index]['image'],
                       name: products[index]['name'],
-                      price: products[index]['price'],
+                      rating: products[index]['rating'],
                     );
                   },
                 ),
@@ -120,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                   ),),
         
                 ],
-              )
+              ),
         
             ],
           ),
@@ -131,8 +132,8 @@ class _HomePageState extends State<HomePage> {
 }
 
 class ProductCard extends StatelessWidget {
-  final String image, name, price;
-  const ProductCard({super.key, required this.image, required this.name, required this.price});
+  final String image, name, rating;
+  const ProductCard({super.key, required this.image, required this.name, required this.rating});
 
   @override
   Widget build(BuildContext context) {
@@ -156,10 +157,19 @@ class ProductCard extends StatelessWidget {
           Image.network(image,  fit: BoxFit.cover),
           const SizedBox(height: 8),
           Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text(price, style: const TextStyle(fontSize: 14, color: Colors.green)),
+          Text(rating, style: const TextStyle(fontSize: 14, color: Colors.green)),
           const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              Fluttertoast.showToast(
+                  msg: "${rating.substring(1,2)}$name",
+                  toastLength: Toast.LENGTH_SHORT,
+                  timeInSecForIosWeb: 1,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0
+              );
+            },
             child: const Text('Watch now'),
           ),
 

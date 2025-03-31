@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:untitled3/testpage.dart';
+import 'package:untitled3/ui/cart.dart';
+import 'package:untitled3/ui/homepage.dart';
 import 'login.dart';
 import 'ui/forgetpassword.dart';
 import 'ui/signUp.dart';
@@ -22,7 +24,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(
+      home: const HomePage(
 
       ),
     );

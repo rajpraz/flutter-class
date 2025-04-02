@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'checkoutPage.dart';
 
 class cartPage extends StatefulWidget {
   const cartPage({super.key});
@@ -65,12 +66,12 @@ class _CartPageState extends State<cartPage> {
   }
 
   void checkout() {
-    // Implement your checkout functionality here
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Checkout'),
-        content: const Text('Proceed to payment?'),
+        content: const Text('Proceed to Checkout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -78,11 +79,8 @@ class _CartPageState extends State<cartPage> {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(context);
-              clearCart();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Checkout successful!')),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>CheckoutPage()));
+
             },
             child: const Text('Proceed'),
           ),

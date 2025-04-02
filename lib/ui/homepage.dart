@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/ui/cart.dart';
+import 'package:untitled3/ui/detail.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,6 +37,10 @@ class _HomePageState extends State<HomePage> {
       const SnackBar(content: Text('Added to cart!')),
     );
   }
+
+
+
+
   final List<String> images = [
     'https://cdn.pixabay.com/photo/2022/06/21/07/04/anime-7275258_1280.jpg',
     'https://cdn.pixabay.com/photo/2020/04/25/09/52/onepiece-5090120_1280.jpg',
@@ -201,7 +207,11 @@ class _HomePageState extends State<HomePage> {
                       name: list[index]['name'],
                       rating: list[index]['rating'],
                       price: list[index]['price'],
+                      list: list[index],
                       onAddToCart: ()=> addToCart(list[index]),
+
+
+
                     );
                   },
                 ),
@@ -272,6 +282,7 @@ class ListCard extends StatelessWidget {
   final    String rating;
   final  double price;
   final VoidCallback onAddToCart;
+  final Map<String,dynamic>list;
 
   const ListCard({
     super.key,
@@ -280,6 +291,9 @@ class ListCard extends StatelessWidget {
     required this.rating,
     required this.price,
     required this.onAddToCart,
+    required this.list
+
+
   });
 
 
@@ -287,47 +301,53 @@ class ListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: Container(
-        width: 350,
-        height: 100,
+      child: GestureDetector(onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) =>  DetailPage(list:list,)),
+        );
+      },
+        child: Container(
+          width: 350,
+          height: 100,
 
 
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 5,
-              spreadRadius: 2,
-            ),
-          ],
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 5,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 20.0),
+                    child: Image.network(image, fit: BoxFit.contain),
+                  ),
+                  SizedBox(width:60),
+                  Column(
+                    children: [
+                      Text(rating, style: const TextStyle(fontSize: 14, color: Colors.green)),
+                      Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: onAddToCart,
+                        child: const Text('Buy Now'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 20.0),
-              child: Image.network(image, fit: BoxFit.contain),
-            ),
-            SizedBox(width:60),
-            Column(
-              children: [
-                Text(rating, style: const TextStyle(fontSize: 14, color: Colors.green)),
-                Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: onAddToCart,
-                  child: const Text('Buy Now'),
-                ),
-              ],
-            ),
-
-          ],
-        ),
-
       ),
     );
   }

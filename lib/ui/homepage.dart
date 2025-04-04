@@ -8,6 +8,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/ui/cart.dart';
 import 'package:untitled3/ui/detail.dart';
+import 'package:untitled3/ui/splashScreen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,6 +18,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> cartItems = [];
   Future<void> loadCartItems() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> cart = prefs.getStringList('cart') ?? [];
@@ -98,14 +100,38 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const cartPage()),
+                  MaterialPageRoute(builder: (context) => cartPage()),
                 );
               },
+
               child: const Icon(Icons.shopping_bag),
             ),
+
           ),
+        
         ],
       ),
+
+      drawer: Drawer(
+        child: Align(
+          alignment: Alignment.bottomLeft,
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: TextButton(
+            onPressed: ()async {
+              SharedPreferences logoutpref =await SharedPreferences.getInstance();
+              setState(() {
+                logoutpref.clear();
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>SplashScreen()));
+              });
+
+
+
+            },
+            child: const Text('Log out',style: TextStyle(fontSize: 20),),
+                  ),
+          ),
+        ),),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -264,14 +290,14 @@ class ProductCard extends StatelessWidget {
 
 
             },
-            child: const Text('Buy Now'),
+            child: const Text('Watch Now'),
           ),
         ],
       ),
     );
   }
 }
-List<Map<String, dynamic>> cartItems = [];
+
 
 
 

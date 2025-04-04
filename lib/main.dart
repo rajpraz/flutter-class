@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:untitled3/testpage.dart';
 import 'package:untitled3/ui/cart.dart';
 import 'package:untitled3/ui/homepage.dart';
+import 'package:untitled3/ui/splashScreen.dart';
 import 'login.dart';
 import 'ui/forgetpassword.dart';
 import 'ui/signUp.dart';

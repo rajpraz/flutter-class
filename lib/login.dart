@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:developer';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:untitled3/ui/forgetpassword.dart';
 import 'package:untitled3/ui/homepage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -21,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obsecure=true;
+  bool _ischecked=false;
   void _signUp(){
     Navigator.push(context,
         MaterialPageRoute(builder: (context)=>signUp()));
@@ -41,6 +44,7 @@ class _LoginPageState extends State<LoginPage> {
 }
 
   Future postLogin() async {
+    SharedPreferences save = await SharedPreferences.getInstance();
     final response = await http.post(
         Uri.parse('https://api.sarbamfoods.com/accounts/login/'),
         headers: {
@@ -53,6 +57,10 @@ class _LoginPageState extends State<LoginPage> {
         }));
 
     if(response.statusCode==200){
+     if( _ischecked=true) {
+       save.setString("token", jsonDecode(response.body)["access_token"]);
+     }
+      log(save.getString("token")!);
       Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
     }else{
       Fluttertoast.showToast(
@@ -149,23 +157,40 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                     ),
-                  SizedBox(height: 20,),
-                  Center(
-                    child: SizedBox(
+                  SizedBox(height: 10,),
+
+                  SizedBox(
+                    height: 50,
+                      width: 300,
+                      child: Row (
+                        children: [
+                          Checkbox(value: _ischecked, onChanged:(bool? value){
+                            setState(() {
+                              _ischecked=value!;
+                            });
+                          },
+  ),
+                          GestureDetector(onTap: (){
+                            setState(() {
+                              _ischecked==true?_ischecked=false:_ischecked=true;
+                            });
+                          },
+
+                              child: Text("remeber me")),
+                        ]
+                      ),
 
 
+          ),
+                  SizedBox(height: 20),
+                  SizedBox(
+                    child: Center(
                       child: ElevatedButton(
                           onPressed: _forgetPassword,
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
                             backgroundColor: Colors.transparent,
-
-
-
-
-
                           ),
-
                           child:  Text("Forget password?",style: TextStyle(fontSize: 16,color: Colors.black),)),
                     ),
                   ),

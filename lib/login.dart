@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:untitled3/ui/signUp.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 
 
@@ -24,6 +25,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obsecure=true;
   bool _ischecked=false;
+  bool _isloading=false;
+
+
   void _signUp(){
     Navigator.push(context,
         MaterialPageRoute(builder: (context)=>signUp()));
@@ -36,14 +40,23 @@ class _LoginPageState extends State<LoginPage> {
     String  password  = _passwordController.text.trim();
 
   if (email.isEmpty || password.isEmpty) {
+    setState(() {
+      _isloading=false;
+    });
 
   return ;
   }
-  postLogin();
+  postLogin(
+
+  );
 
 }
 
   Future postLogin() async {
+    setState(() {
+      _isloading=true;
+    });
+
     SharedPreferences save = await SharedPreferences.getInstance();
     final response = await http.post(
         Uri.parse('https://api.sarbamfoods.com/accounts/login/'),
@@ -57,12 +70,22 @@ class _LoginPageState extends State<LoginPage> {
         }));
 
     if(response.statusCode==200){
+      setState(() {
+        _isloading=false;
+      });
+
      if( _ischecked=true) {
        save.setString("token", jsonDecode(response.body)["access_token"]);
      }
       log(save.getString("token")!);
       Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
     }else{
+
+      _emailController.clear();
+      _passwordController.clear();
+      setState(() {
+        _isloading=false;
+      });
       Fluttertoast.showToast(
           msg: "Invalid credentials",
           toastLength: Toast.LENGTH_SHORT,
@@ -85,7 +108,12 @@ class _LoginPageState extends State<LoginPage> {
         Padding(
 
           padding: const EdgeInsets.all(8.0),
-          child: SingleChildScrollView(
+          child: _isloading==true?
+              SpinKitDancingSquare(
+                color: Colors.black,
+              )
+              :SingleChildScrollView(
+
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(

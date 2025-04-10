@@ -80,7 +80,7 @@ class _CartPageState extends State<cartPage> {
           TextButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(context, MaterialPageRoute(builder: (context)=>CheckoutPage()));
+              Navigator.push(context, MaterialPageRoute(builder: (context)=>CheckoutPage(price: totalPrice,)));
 
             },
             child: const Text('Proceed'),

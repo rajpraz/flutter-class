@@ -18,6 +18,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  TextEditingController searchController=TextEditingController();
+
   List<Map<String, dynamic>> cartItems = [];
   Future<void> loadCartItems() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -64,20 +66,24 @@ class _HomePageState extends State<HomePage> {
 
   final List<Map<String, dynamic>> list = [
     {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/bcd84731a3eda4f4a306250769675065.jpg', 'name': 'One piece', 'rating': '#1','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/65f92e6e315a931ef872da4b312442b8.jpg', 'name': 'Solo leveling', 'rating': '#2','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2cbe94bcbf18f0f3c205325d4e234d16.jpg', 'name': 'Dragon ball', 'rating': '#3','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2bbe7ece956bbefc6f385a7a447c182c.jpg', 'name': 'Sakamoto days', 'rating': '#4','price':10.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/65f92e6e315a931ef872da4b312442b8.jpg', 'name': 'Solo leveling', 'rating': '#2','price':103453.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2cbe94bcbf18f0f3c205325d4e234d16.jpg', 'name': 'Dragon ball', 'rating': '#3','price':10345.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/2bbe7ece956bbefc6f385a7a447c182c.jpg', 'name': 'Sakamoto days', 'rating': '#4','price':14350.0},
     {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c7346b9cd930d501d2b6b40770b2b1d0.jpg', 'name': 'Apothecary dairies', 'rating': '#5','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c2a246a281ee33d66635458797ce76cf.jpg', 'name': 'Happy marriage', 'rating': '#6','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/ebb78f8688b59abf0409b8799159127a.jpg', 'name': 'Arifureta', 'rating': '#7','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/b8169841c47c010d664f293fcec036fb.jpg', 'name': 'Blue box', 'rating': '#8','price':10.0},
-    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/a8b56a7589ff9edb6c86977c31e27a06.jpg', 'name': 'Dandan', 'rating': '#9','price':10.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/c2a246a281ee33d66635458797ce76cf.jpg', 'name': 'Happy marriage', 'rating': '#6','price':12340.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/ebb78f8688b59abf0409b8799159127a.jpg', 'name': 'Arifureta', 'rating': '#7','price':123.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/b8169841c47c010d664f293fcec036fb.jpg', 'name': 'Blue box', 'rating': '#8','price':330.0},
+    {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/a8b56a7589ff9edb6c86977c31e27a06.jpg', 'name': 'Dandan', 'rating': '#9','price':90.0},
     {'image': 'https://cdn.noitatnemucod.net/thumbnail/300x400/100/d9bb23228e5a641b5a3e9386382dae3a.jpg', 'name': 'Wind breaker', 'rating': '#10','price':10.0},
   ];
+   List<Map<String, dynamic>>filterproduct = [];
+   List<Map<String, dynamic>>filterlist = [];
 
   @override
   void initState() {
     super.initState();
+    filterproduct=products;
+    filterlist=list;
   }
 
   @override
@@ -113,31 +119,74 @@ class _HomePageState extends State<HomePage> {
       ),
 
       drawer: Drawer(
-        child: Align(
-          alignment: Alignment.bottomLeft,
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: TextButton(
-            onPressed: ()async {
-              SharedPreferences logoutpref =await SharedPreferences.getInstance();
-              setState(() {
-                logoutpref.clear();
-                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>SplashScreen()));
-              });
+
+        child:
+       Column(
+         children: [
+           ListView(
+
+           ),
+           Align(
+             alignment: Alignment.bottomLeft,
+             child: Padding(
+               padding: const EdgeInsets.all(20.0),
+               child: TextButton(
+                 onPressed: ()async {
+                   SharedPreferences logoutpref =await SharedPreferences.getInstance();
+                   setState(() {
+                     logoutpref.clear();
+                     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>SplashScreen()));
+                   });
 
 
 
-            },
-            child: const Text('Log out',style: TextStyle(fontSize: 20),),
-                  ),
-          ),
-        ),),
+                 },
+                 child: const Text('Log out',style: TextStyle(fontSize: 20),),
+               ),
+             ),
+           ),
+         ],
+       )
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Padding(
+                padding:EdgeInsets.all(8.0),
+                child:  TextField(
+                  controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+
+                        filterlist = list.where((product) {
+                          final nameMatch = product['name']
+                              .toLowerCase()
+                              .contains(value.toLowerCase());
+
+                          final priceMatch = double.tryParse(value) != null &&
+                              product['price'].toString().contains(value);
+                          return nameMatch || priceMatch;
+                        }).toList();
+
+                        filterproduct = products
+                            .where((item) =>item['name']
+                            .toLowerCase()
+                            .contains(value.toLowerCase()))
+                            .toList();
+
+
+                          }
+                      );
+                    },
+
+                  ),
+
+              ),
+
+              SizedBox(height: 10,),
               const Text(
                 "All time favourite",
                 style: TextStyle(
@@ -179,12 +228,12 @@ class _HomePageState extends State<HomePage> {
                 height: 350, // Adjust height based on content
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: products.length,
+                  itemCount:filterproduct.isEmpty? products.length:filterproduct.length,
                   itemBuilder: (context, index) {
                     return ProductCard(
-                      image: products[index]['image'],
-                      name: products[index]['name'],
-                      rating: products[index]['rating'],
+                      image:filterproduct.isEmpty? products[index]['image']:filterproduct[index]['image'],
+                      name: filterproduct.isEmpty? products[index]['name']:filterproduct[index]['name'],
+                      rating: filterproduct.isEmpty? products[index]['rating']:filterproduct[index]['rating'],
                     );
                   },
                 ),
@@ -226,7 +275,7 @@ class _HomePageState extends State<HomePage> {
                 height: 150, // Adjust height based on content
                 child: ListView.builder(
                   scrollDirection: Axis.vertical,
-                  itemCount: list.length,
+                  itemCount:filterlist.length,
                   itemBuilder: (context, index) {
                     return ListCard(
                       image: list[index]['image'],
@@ -254,6 +303,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 class ProductCard extends StatelessWidget {
+
   final String image, name, rating;
 
   ProductCard({super.key, required this.image, required this.name, required this.rating});

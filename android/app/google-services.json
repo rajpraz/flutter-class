@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "1071153069781",
-    "project_id": "anime-5f114",
-    "storage_bucket": "anime-5f114.firebasestorage.app"
+    "project_number": "64467931721",
+    "project_id": "pooja-pasal",
+    "storage_bucket": "pooja-pasal.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1071153069781:android:09f8c92e75b168dd066c5c",
+        "mobilesdk_app_id": "1:64467931721:android:2a04f68daa7e76dcae6598",
         "android_client_info": {
           "package_name": "com.example.untitled3"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "64467931721-h9qjlnnaldcpdh084235ogi1k61dt094.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAdnAiNyVdTM1T6Qy0xZiZohWFI5ceJ7IY"
+          "current_key": "AIzaSyBNPH7MOMgYIQ3RB0P0APFum79EtE9j2so"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "64467931721-h9qjlnnaldcpdh084235ogi1k61dt094.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

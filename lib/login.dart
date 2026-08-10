@@ -1,292 +1,269 @@
-import 'dart:convert';
-import 'dart:developer';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:untitled3/ui/forgetpassword.dart';
-import 'package:untitled3/ui/homepage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:untitled3/ui/signUp.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-
-
-
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:untitled3/const/style.dart';
+import 'package:untitled3/services/auth_service.dart';
+import 'package:untitled3/ui/homepage.dart';
+import 'package:untitled3/ui/signUp.dart';
+import 'package:untitled3/ui/seller_dashboard.dart';
+import 'package:untitled3/ui/forgetpassword.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final String role;
+  const LoginPage({super.key, this.role = 'buyer'});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
-
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _obsecure=true;
-  bool _ischecked=false;
-  bool _isloading=false;
+  bool _obsecure = true;
+  bool _isloading = false;
+  late String currentRole;
 
-
-  void _signUp(){
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context)=>signUp()));
+  @override
+  void initState() {
+    super.initState();
+    currentRole = widget.role;
   }
-  void _forgetPassword(){
 
+  void _signUp() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => signUp(role: currentRole)),
+    );
   }
-  void _login() {
-    String  email  = _emailController.text.trim();
-    String  password  = _passwordController.text.trim();
 
-  if (email.isEmpty || password.isEmpty) {
-    setState(() {
-      _isloading=false;
-    });
-
-  return ;
+  void _forgetPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const forgetPassword()),
+    );
   }
-  postLogin(
 
-  );
-
-}
-
-  Future postLogin() async {
-    setState(() {
-      _isloading=true;
-    });
-
-    SharedPreferences save = await SharedPreferences.getInstance();
-    final response = await http.post(
-        Uri.parse('https://api.sarbamfoods.com/accounts/login/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode({
-          "email":_emailController.text.toString(),
-          "password":_passwordController.text.toString(),
-        }));
-
-    if(response.statusCode==200){
-      setState(() {
-        _isloading=false;
-      });
-
-     if( _ischecked=true) {
-       save.setString("token", jsonDecode(response.body)["access_token"]);
-     }
-      log(save.getString("token")!);
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>HomePage()));
-    }else{
-
-      _emailController.clear();
-      _passwordController.clear();
-      setState(() {
-        _isloading=false;
-      });
-      Fluttertoast.showToast(
-          msg: "Invalid credentials",
-          toastLength: Toast.LENGTH_SHORT,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0
-      );
+  Future<void> _continueWithGoogle() async {
+    setState(() => _isloading = true);
+    try {
+      await AuthService.signInWithGoogle(role: currentRole);
+      if (!mounted) return;
+      final user = AuthService.currentUser;
+      final appUser = user == null ? null : await AuthService.getUserDoc(user.uid);
+      if (!mounted) return;
+      _routeAfterLogin(appUser?.role ?? currentRole);
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Google sign-in failed: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isloading = false);
     }
-    return response;
   }
 
+  void _routeAfterLogin(String role) {
+    if (role == 'seller') {
+      Navigator.pushReplacement(context,
+          MaterialPageRoute(builder: (context) => const SellerDashboard()));
+    } else {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => const HomePage()));
+    }
+  }
 
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-    @override
+    if (email.isEmpty || password.isEmpty) {
+      Fluttertoast.showToast(msg: 'Please enter your email and password');
+      return;
+    }
+
+    setState(() => _isloading = true);
+
+    try {
+      await AuthService.signIn(email: email, password: password);
+      final user = AuthService.currentUser;
+      final appUser = user == null ? null : await AuthService.getUserDoc(user.uid);
+
+      if (!mounted) return;
+      if (appUser == null) {
+        Fluttertoast.showToast(msg: 'Account profile not found. Please sign up again.');
+        return;
+      }
+      _routeAfterLogin(appUser.role);
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(msg: e.message ?? 'Login failed. Please try again.');
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isloading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body:
-        Padding(
+        backgroundColor: AppColors.background,
+        body: _isloading
+            ? const Center(
+                child: SpinKitCircle(color: AppColors.accent, size: 60))
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 20),
+                    const Text('Welcome Back!',
+                        style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary)),
+                    const SizedBox(height: 6),
+                    const Text('Login to continue',
+                        style: TextStyle(fontSize: 15, color: AppColors.muted)),
+                    const SizedBox(height: 20),
 
-          padding: const EdgeInsets.all(8.0),
-          child: _isloading==true?
-              SpinKitDancingSquare(
-                color: Colors.black,
-              )
-              :SingleChildScrollView(
-
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-
-
-                crossAxisAlignment: CrossAxisAlignment.start,
-
-                children: [
-
-                  SizedBox(height: 30,),
-                  Text("Welcome",style: TextStyle(
-                    fontSize: 65,
-                    fontWeight: FontWeight.bold
-                  ),),
-
-
-                   Text("Please login",style: TextStyle(
-                     fontSize: 20,
-                     fontWeight: FontWeight.bold
-                   ),),
-
-
-                  const SizedBox(height:100 ,),
-
-                     TextFormField(
-
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                       hintText:'ENTER USERNAME',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.email),
-                        labelText: "Enter your email",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                          )
-
+                    // Buyer / seller selector
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    SizedBox(height: 20,),
-                    TextFormField(
-                    controller: _passwordController,
-                      obscureText: _obsecure,
-
-                      decoration: InputDecoration(
-                          hintText:'ENTER PASSWORD',
-                          hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        suffixIcon: GestureDetector(
-                            onTap: (){
-                              if(_obsecure==true){
-                                setState(() {
-                                  _obsecure=false;
-                                });
-                              }else{
-                                setState(() {
-                                  _obsecure=true;
-                                });
-                              }
-                            },
-                            child: Icon(_obsecure?Icons.remove_red_eye:Icons.remove_red_eye_outlined)),
-                          labelText: "Enter your password",
-                          contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                          border: OutlineInputBorder(
-                              borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                              borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                          )
-
-                      ),
-
-                    ),
-                  SizedBox(height: 10,),
-
-                  SizedBox(
-                    height: 50,
-                      width: 300,
-                      child: Row (
+                      child: Row(
                         children: [
-                          Checkbox(value: _ischecked, onChanged:(bool? value){
-                            setState(() {
-                              _ischecked=value!;
-                            });
-                          },
-  ),
-                          GestureDetector(onTap: (){
-                            setState(() {
-                              _ischecked==true?_ischecked=false:_ischecked=true;
-                            });
-                          },
-
-                              child: Text("remeber me")),
-                        ]
+                          Expanded(
+                            child: _roleTab('Buyer', 'buyer'),
+                          ),
+                          Expanded(
+                            child: _roleTab('Seller', 'seller'),
+                          ),
+                        ],
                       ),
-
-
-          ),
-                  SizedBox(height: 20),
-                  SizedBox(
-                    child: Center(
-                      child: ElevatedButton(
-                          onPressed: _forgetPassword,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Colors.transparent,
-                          ),
-                          child:  Text("Forget password?",style: TextStyle(fontSize: 16,color: Colors.black),)),
                     ),
-                  ),
+                    const SizedBox(height: 24),
 
-
-                  SizedBox(height: 40,),
-
-
-                   Center(
-                     child: SizedBox(
-                       height: 50,
-                       width: 1500,
-
-                       child: ElevatedButton(
-                           onPressed: _login,
-                           style: ElevatedButton.styleFrom(
-                             elevation: 0,
-                             backgroundColor: Colors.blue,
-                             shape: RoundedRectangleBorder(
-
-                               borderRadius: BorderRadius.circular(100.0),
-
-                             ),
-                           ),
-
-                            child: Center(child: Text("Log In",style: TextStyle(fontSize: 20,color: Colors.black),))),
-                     ),
-                   ),
-
-
-
-
-                  SizedBox(height: 60,),
-                  Text("------DONT HAVE ACCOUNT?THEN SIGN UP.-------"),
-                  SizedBox(height: 40,),
-                  Center(
-                    child: SizedBox(
-                      height: 50,
-                      width: 1500,
-
-                      child: ElevatedButton(
-                          onPressed: _signUp,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-
-                              borderRadius: BorderRadius.circular(100.0),
-
-                            ),
-                          ),
-
-                          child: Center(child: Text("Sign Up",style: TextStyle(fontSize: 20,color: Colors.black),))),
+                    const Text('Email',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, color: AppColors.text)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.email_outlined),
+                        hintText: 'Email address',
+                      ),
                     ),
-                  ),
-
-
-
-
-                ],
+                    const SizedBox(height: 16),
+                    const Text('Password',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, color: AppColors.text)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _passwordController,
+                      obscureText: _obsecure,
+                      decoration: InputDecoration(
+                        prefixIcon: const Icon(Icons.lock_outline),
+                        suffixIcon: GestureDetector(
+                          onTap: () => setState(() => _obsecure = !_obsecure),
+                          child: Icon(_obsecure
+                              ? Icons.remove_red_eye
+                              : Icons.remove_red_eye_outlined),
+                        ),
+                        hintText: 'Enter your password',
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _forgetPassword,
+                        child: const Text('Forgot password?',
+                            style: TextStyle(color: AppColors.accent)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _login,
+                        child: const Text('Login',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: const [
+                        Expanded(child: Divider(color: AppColors.border)),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('OR', style: TextStyle(color: AppColors.muted)),
+                        ),
+                        Expanded(child: Divider(color: AppColors.border)),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton.icon(
+                        onPressed: _continueWithGoogle,
+                        icon: const Icon(Icons.g_mobiledata,
+                            size: 28, color: AppColors.text),
+                        label: const Text('Continue with Google',
+                            style: TextStyle(color: AppColors.text)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.border),
+                          foregroundColor: AppColors.text,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('New here? '),
+                        GestureDetector(
+                          onTap: _signUp,
+                          child: Text(
+                            'Create ${currentRole == 'seller' ? 'seller' : 'a buyer'} account',
+                            style: const TextStyle(
+                                color: AppColors.accent,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
+    );
+  }
+
+  Widget _roleTab(String label, String role) {
+    final bool selected = currentRole == role;
+    return GestureDetector(
+      onTap: () => setState(() => currentRole = role),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.muted,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
     );
   }
 }
-
-
-

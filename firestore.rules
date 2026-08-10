@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // users/{userId} - users can only read/write their own profile doc.
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // products/{productId}
+    //  - any signed-in user can read active products
+    //  - a seller can also read their own inactive/draft products
+    //  - only the owning seller can create/update/delete their products
+    match /products/{productId} {
+      allow read: if isSignedIn() &&
+        (resource.data.isActive == true || resource.data.sellerId == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+    }
+
+    // carts/{userId}/items/{productId} - a buyer can only read/write their own cart.
+    match /carts/{userId}/items/{productId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // orders/{orderId}
+    //  - a buyer can read and create their own orders
+    //  - a seller can read orders that contain at least one of their products
+    //  - only a seller involved in the order may update it, and only its status
+    match /orders/{orderId} {
+      allow read: if isSignedIn() &&
+        (resource.data.buyerId == request.auth.uid ||
+         request.auth.uid in resource.data.sellerIds);
+
+      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        request.auth.uid in resource.data.sellerIds &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+
+      allow delete: if false;
+    }
+
+    // notifications/{userId}/items/{notificationId}
+    //  - only the owner can read, mark-read, or delete their own notifications
+    //  - any signed-in user can create a notification for another user (e.g. a
+    //    seller notifying a buyer of an order status change), matching how
+    //    order updates already cross between buyer and seller.
+    match /notifications/{userId}/items/{notificationId} {
+      allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn();
+    }
+  }
+}

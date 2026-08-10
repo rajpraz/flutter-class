@@ -1,278 +1,239 @@
-import 'dart:convert';
-import 'package:untitled3/ui/forgetpassword.dart';
-import 'package:untitled3/login.dart';
-import 'package:untitled3/ui/homepage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-
-
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:untitled3/const/style.dart';
+import 'package:untitled3/login.dart' as login_page;
+import 'package:untitled3/services/auth_service.dart';
 
 class signUp extends StatefulWidget {
-  const signUp({super.key});
+  final String role;
+  const signUp({super.key, this.role = 'buyer'});
 
   @override
   State<signUp> createState() => _signUpState();
 }
 
-
 class _signUpState extends State<signUp> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _phone_numberController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirm_passwordController = TextEditingController();
-  bool _obsecure=true;
-  bool _obsecure1=true;
-  void _login() {
-    String  name  = _nameController.text.trim();
-    String  address = _addressController.text.trim();
-    String  phone_number  = _phone_numberController.text.trim();
-    String  email  = _emailController.text.trim();
-    String  password  = _passwordController.text.trim();
-    String  confirm_password  = _confirm_passwordController.text.trim();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+  bool _obsecure = true;
+  bool _obsecure1 = true;
+  bool _isSaving = false;
 
+  Future<void> _signUp() async {
+    final name = _nameController.text.trim();
+    final address = _addressController.text.trim();
+    final phone = _phoneNumberController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty|| name.isEmpty || phone_number.isEmpty|| confirm_password.isEmpty|| address.isEmpty) {
-
-      return ;
+    if (name.isEmpty ||
+        address.isEmpty ||
+        phone.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      Fluttertoast.showToast(msg: 'Please fill all fields');
+      return;
     }
-    postLogin();
 
-  }
+    if (password != confirmPassword) {
+      Fluttertoast.showToast(msg: 'Passwords do not match');
+      return;
+    }
 
-  Future postLogin() async {
-    final response = await http.post(
-        Uri.parse('https://api.sarbamfoods.com/accounts/signup/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode({
-          "name":_nameController.text.toString(),
-          "phone_number":_phone_numberController.text.toString(),
-          "address":_addressController.text.toString(),
-          "email":_emailController.text.toString(),
-          "password":_passwordController.text.toString(),
-          "confirm_password":_confirm_passwordController.text.toString(),
-        }));
+    if (password.length < 6) {
+      Fluttertoast.showToast(msg: 'Password must be at least 6 characters');
+      return;
+    }
 
-    if(response.statusCode==200 ||response.statusCode==201 ){
-      Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginPage()));
-    }else{
-      Fluttertoast.showToast(
-          msg: "Invalid credentials",
-          toastLength: Toast.LENGTH_SHORT,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0
+    setState(() => _isSaving = true);
+    try {
+      await AuthService.signUp(
+        email: email,
+        password: password,
+        name: name,
+        phone: phone,
+        address: address,
+        role: widget.role,
       );
+
+      if (!mounted) return;
+      Fluttertoast.showToast(msg: 'Account created successfully');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => login_page.LoginPage(role: widget.role),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(msg: e.message ?? 'Could not create account');
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-    return response;
   }
 
+  Widget _fieldLabel(String label) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(label,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, color: AppColors.text)),
+      );
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _addressController.dispose();
+    _phoneNumberController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body:
-        Padding(
-
-          padding: const EdgeInsets.all(8.0),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppColors.background, AppColors.primary],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: SingleChildScrollView(
               child: Column(
-
-
                 crossAxisAlignment: CrossAxisAlignment.start,
-
                 children: [
-
-                  SizedBox(height: 30,),
-                  Text("SIGN UP",style: TextStyle(
-                      fontSize: 65,
-                      fontWeight: FontWeight.bold
-                  ),),
-
-
-                  Text("SignUp to continue",style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold
-                  ),),
-
-
-                  const SizedBox(height:50 ,),
+                  const SizedBox(height: 20),
+                  Text(
+                      widget.role == 'seller'
+                          ? 'Seller Sign Up'
+                          : 'Create Account',
+                      style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  Text(
+                    widget.role == 'seller'
+                        ? 'Register as a seller to list your pooja items.'
+                        : 'Join Pooja Pasal for trusted puja essentials.',
+                    style:
+                        const TextStyle(fontSize: 16, color: AppColors.muted),
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Text(
+                        'Create an account to save addresses, track orders, and shop your favorite rituals faster.'),
+                  ),
+                  const SizedBox(height: 20),
+                  _fieldLabel('Full name'),
                   TextFormField(
-
                     controller: _nameController,
-                    decoration: InputDecoration(
-                        hintText:'ENTER FIRST NAME',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.account_box),
-                        labelText: "Enter your first name",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
-                    ),
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.person_outline),
+                        hintText: 'Enter your full name'),
                   ),
-                  SizedBox(height: 20,),
-
+                  const SizedBox(height: 16),
+                  _fieldLabel('Phone number'),
                   TextFormField(
-
-                    controller: _phone_numberController,
-                    decoration: InputDecoration(
-                        hintText:'ENTER PHONE NUMBER',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.phone),
-                        labelText: "Enter your Phone number",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
-                    ),
+                    controller: _phoneNumberController,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.phone_outlined),
+                        hintText: 'Enter your phone number'),
                   ),
-                  SizedBox(height: 20,),
-
+                  const SizedBox(height: 16),
+                  _fieldLabel('Address'),
                   TextFormField(
-
                     controller: _addressController,
-                    decoration: InputDecoration(
-                        hintText:'ENTER YOUR ADDRESS',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.location_history),
-                        labelText: "Enter your adress",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
-                    ),
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                        hintText: 'Enter your address'),
                   ),
-                  SizedBox(height: 20,),
+                  const SizedBox(height: 16),
+                  _fieldLabel('Email'),
                   TextFormField(
-
                     controller: _emailController,
-                    decoration: InputDecoration(
-                        hintText:'ENTER USERNAME',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.email),
-                        labelText: "Enter your email",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
-                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.email_outlined),
+                        hintText: 'Enter your email address'),
                   ),
-                  SizedBox(height: 20,),
+                  const SizedBox(height: 16),
+                  _fieldLabel('Password'),
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obsecure,
-
                     decoration: InputDecoration(
-                        hintText:'ENTER PASSWORD',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.password),
-                        suffixIcon: GestureDetector(
-                            onTap: (){
-                              if(_obsecure==true){
-                                setState(() {
-                                  _obsecure=false;
-                                });
-                              }else{
-                                setState(() {
-                                  _obsecure=true;
-                                });
-                              }
-                            },
-                            child: Icon(_obsecure?Icons.remove_red_eye:Icons.remove_red_eye_outlined)),
-                        labelText: "Enter your password",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _obsecure = !_obsecure),
+                        tooltip: _obsecure ? 'Show password' : 'Hide password',
+                        icon: Icon(_obsecure
+                            ? Icons.remove_red_eye
+                            : Icons.remove_red_eye_outlined),
+                      ),
+                      hintText: 'At least 6 characters',
                     ),
-
                   ),
-                  SizedBox(height: 20,),
+                  const SizedBox(height: 16),
+                  _fieldLabel('Confirm password'),
                   TextFormField(
-                    controller: _confirm_passwordController,
-                    obscureText: _obsecure,
-
+                    controller: _confirmPasswordController,
+                    obscureText: _obsecure1,
                     decoration: InputDecoration(
-                        hintText:'ENTER PASSWORD',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.password_sharp),
-                        suffixIcon: GestureDetector(
-                            onTap: (){
-                              if(_obsecure1==true){
-                                setState(() {
-                                  _obsecure1=false;
-                                });
-                              }else{
-                                setState(() {
-                                  _obsecure1=true;
-                                });
-                              }
-                            },
-                            child: Icon(_obsecure1?Icons.remove_red_eye:Icons.remove_red_eye_outlined)),
-                        labelText: "Confirm password",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
-                    ),
-
-                  ),
-
-
-
-                  SizedBox(height: 40,),
-
-
-                  Center(
-                    child: SizedBox(
-                      height: 50,
-                      width: 1500,
-
-                      child: ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-
-                              borderRadius: BorderRadius.circular(100.0),
-
-                            ),
-                          ),
-
-                          child: Center(child: Text("Sign up",style: TextStyle(fontSize: 20,color: Colors.black),))),
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _obsecure1 = !_obsecure1),
+                        tooltip: _obsecure1 ? 'Show password' : 'Hide password',
+                        icon: Icon(_obsecure1
+                            ? Icons.remove_red_eye
+                            : Icons.remove_red_eye_outlined),
+                      ),
+                      hintText: 'Re-enter your password',
                     ),
                   ),
-
-
-
-
-
-
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _signUp,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2.4),
+                            )
+                          : const Text('Sign Up',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white)),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -282,6 +243,3 @@ class _signUpState extends State<signUp> {
     );
   }
 }
-
-
-

@@ -1,147 +1,119 @@
-import 'dart:convert';
-import 'package:untitled3/ui/homepage.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-
-
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:untitled3/const/style.dart';
+import 'package:untitled3/services/auth_service.dart';
 
 class forgetPassword extends StatefulWidget {
   const forgetPassword({super.key});
 
   @override
-  State<forgetPassword> createState() => _LoginPageState();
+  State<forgetPassword> createState() => _ForgetPasswordState();
 }
 
-
-class _LoginPageState extends State<forgetPassword> {
+class _ForgetPasswordState extends State<forgetPassword> {
   final TextEditingController _emailController = TextEditingController();
+  bool _isSending = false;
+  bool _sent = false;
 
-
-  void _login() {
-    String email = _emailController.text.trim();
-
-  }
-
-  Future postLogin() async {
-    final response = await http.post(
-        Uri.parse('https://api.sarbamfoods.com/accounts/forgot_password/'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode({
-          "email":_emailController.text.toString(),
-
-        }));
-
-    if(response.statusCode==200){
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>HomePage()));
-    }else{
-      Fluttertoast.showToast(
-          msg: "Invalid credentials",
-          toastLength: Toast.LENGTH_SHORT,
-          timeInSecForIosWeb: 1,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0
-      );
+  Future<void> _sendResetLink() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      Fluttertoast.showToast(msg: 'Please enter your email');
+      return;
     }
-    return response;
+
+    setState(() => _isSending = true);
+    try {
+      await AuthService.sendPasswordResetEmail(email);
+      if (!mounted) return;
+      setState(() => _sent = true);
+    } on FirebaseAuthException catch (e) {
+      Fluttertoast.showToast(msg: e.message ?? 'Could not send reset email');
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
-
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        body:
-        Padding(
-
-          padding: const EdgeInsets.all(8.0),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-
-
-                crossAxisAlignment: CrossAxisAlignment.start,
-
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(title: const Text('Reset Password')),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: _sent
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
-                  SizedBox(height: 30,),
-                  Text("Welcome",style: TextStyle(
-                      fontSize: 65,
-                      fontWeight: FontWeight.bold
-                  ),),
-
-
-                  Text("TO CHANGE PASSWORD",style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold
-                  ),),
-
-
-                  const SizedBox(height:100 ,),
-
+                  const Icon(Icons.mark_email_read_outlined,
+                      size: 64, color: AppColors.success),
+                  const SizedBox(height: 16),
+                  const Text('Check your email',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(
+                      'If an account exists for ${_emailController.text.trim()}, '
+                      'we\'ve sent password reset instructions.',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: AppColors.muted)),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Back to Login'),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Forgot your password?',
+                      style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary)),
+                  const SizedBox(height: 8),
+                  const Text(
+                      'Enter your email and we\'ll send you instructions to reset it.',
+                      style: TextStyle(color: AppColors.muted)),
+                  const SizedBox(height: 28),
                   TextFormField(
-
                     controller: _emailController,
-                    decoration: InputDecoration(
-                        hintText:'ENTER USERNAME',
-                        hintStyle: TextStyle(fontFamily: "poppins", color:Colors.grey,fontSize: 16),
-                        prefixIcon: Icon(Icons.email),
-                        labelText: "Enter your email",
-                        contentPadding: EdgeInsets.symmetric(vertical:20.0,horizontal: 20.0),
-                        border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xffcbcbcb),width: 18),
-                            borderRadius: BorderRadius.all(Radius.elliptical(10, 10))
-                        )
-
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.email_outlined),
+                      labelText: 'Email',
                     ),
                   ),
-
-
-
-                  SizedBox(height: 40,),
-
-
-                  Center(
-                    child: SizedBox(
-                      height: 50,
-                      width: 1500,
-
-                      child: ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(
-
-                              borderRadius: BorderRadius.circular(100.0),
-
-                            ),
-                          ),
-
-                          child: Center(child: Text("SUBMIT",style: TextStyle(fontSize: 20,color: Colors.black),))),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSending ? null : _sendResetLink,
+                      child: _isSending
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text('Send Reset Link'),
                     ),
                   ),
-
-
-
-
-
                 ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
 }
-
-
-

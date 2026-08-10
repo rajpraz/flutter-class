@@ -1,12 +1,15 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:khalti_flutter/khalti_flutter.dart';
-import 'package:untitled3/ui/homepage.dart';
-import 'package:untitled3/login.dart';
+import 'package:untitled3/const/style.dart';
+import 'package:untitled3/firebase_options.dart';
+import 'package:untitled3/ui/splashScreen.dart';
 
 void main() async {
-  runApp(
-    MyApp(),
-  );
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -19,11 +22,9 @@ class MyApp extends StatelessWidget {
       builder: (context, e) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'Flutter Demo',
-          theme: ThemeData(
-            primarySwatch: Colors.red,
-          ),
-          home: const LoginPage(),
+          title: 'Pooja Pasal',
+          theme: AppTheme.lightTheme,
+          home: const SplashScreen(),
           navigatorKey: e,
           supportedLocales: const [
             Locale('en', 'US'),

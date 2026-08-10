@@ -8,6 +8,7 @@ import 'package:untitled3/services/auth_service.dart';
 import 'package:untitled3/services/cart_service.dart';
 import 'package:untitled3/services/notification_service.dart';
 import 'package:untitled3/services/order_service.dart';
+import 'package:untitled3/services/pricing_service.dart';
 import 'homepage.dart';
 
 enum PaymentMethod { esewa, cod, khalti }
@@ -181,6 +182,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           );
         },
       );
+    } on OrderValidationException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -218,7 +222,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    final totalAmount = widget.price + 80;
+    final totalAmount = widget.price + PricingService.deliveryFee;
 
     KhaltiScope.of(context).pay(
         config: PaymentConfig(
@@ -238,37 +242,43 @@ class _CheckoutPageState extends State<CheckoutPage> {
         });
   }
 
-  Widget _paymentTile(PaymentMethod method, String label, IconData icon, Color color) {
+  Widget _paymentTile(PaymentMethod method, String label, IconData icon, Color color,
+      {bool enabled = true}) {
     final selected = selectedPaymentMethod == method;
-    return GestureDetector(
-      onTap: () => setState(() => selectedPaymentMethod = method),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-              color: selected ? AppColors.accent : AppColors.border, width: 1.4),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                  color: color.withAlpha(30), borderRadius: BorderRadius.circular(8)),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600))),
-            Radio<PaymentMethod>(
-              value: method,
-              groupValue: selectedPaymentMethod,
-              activeColor: AppColors.accent,
-              onChanged: (value) => setState(() => selectedPaymentMethod = value),
-            ),
-          ],
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: GestureDetector(
+        onTap: enabled ? () => setState(() => selectedPaymentMethod = method) : null,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: selected ? AppColors.accent : AppColors.border, width: 1.4),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                    color: color.withAlpha(30), borderRadius: BorderRadius.circular(8)),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(enabled ? label : '$label (Coming soon)',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+              ),
+              Radio<PaymentMethod>(
+                value: method,
+                groupValue: selectedPaymentMethod,
+                activeColor: AppColors.accent,
+                onChanged: enabled ? (value) => setState(() => selectedPaymentMethod = value) : null,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -378,11 +388,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.border)),
                         child: Row(
-                          children: const [
-                            Icon(Icons.local_shipping_outlined, color: AppColors.accent),
-                            SizedBox(width: 10),
-                            Expanded(child: Text('Standard Delivery (1-2 Days)')),
-                            Text('Rs.80', style: TextStyle(fontWeight: FontWeight.w600)),
+                          children: [
+                            const Icon(Icons.local_shipping_outlined, color: AppColors.accent),
+                            const SizedBox(width: 10),
+                            const Expanded(child: Text('Standard Delivery (1-2 Days)')),
+                            Text('Rs.${PricingService.deliveryFee.toStringAsFixed(0)}',
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -393,7 +404,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       _paymentTile(PaymentMethod.khalti, 'Khalti', Icons.account_balance_wallet,
                           AppColors.khaltiPurple),
                       _paymentTile(PaymentMethod.esewa, 'eSewa', Icons.payments_outlined,
-                          AppColors.success),
+                          AppColors.success,
+                          enabled: false),
                       _paymentTile(PaymentMethod.cod, 'Cash on Delivery', Icons.money,
                           AppColors.muted),
                       const SizedBox(height: 18),
@@ -413,15 +425,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               Text('Rs.${widget.price.toStringAsFixed(2)}'),
                             ]),
                             const SizedBox(height: 4),
-                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: const [
-                              Text('Delivery'),
-                              Text('Rs.80'),
+                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                              const Text('Delivery'),
+                              Text('Rs.${PricingService.deliveryFee.toStringAsFixed(0)}'),
                             ]),
                             const Divider(height: 18),
                             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                               const Text('Total Payable',
                                   style: TextStyle(fontWeight: FontWeight.bold)),
-                              Text('Rs.${(widget.price + 80).toStringAsFixed(2)}',
+                              Text('Rs.${(widget.price + PricingService.deliveryFee).toStringAsFixed(2)}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold, color: AppColors.primary)),
                             ]),
@@ -461,7 +473,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       Center(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 10),
-                          child: Text('Total Payable: Rs.${(widget.price + 80).toStringAsFixed(2)}',
+                          child: Text(
+                              'Total Payable: Rs.${(widget.price + PricingService.deliveryFee).toStringAsFixed(2)}',
                               style: const TextStyle(color: AppColors.muted)),
                         ),
                       ),

@@ -43,8 +43,10 @@ class SellerOrdersPage extends ConsumerWidget {
   Future<void> _advanceStatus(BuildContext context, PoojaOrder order) async {
     final next = _nextStatus(order.status);
     if (next == null) return;
+    final uid = AuthService.currentUser?.uid;
+    if (uid == null) return;
     try {
-      await OrderService.updateStatus(order.id, next);
+      await OrderService.updateStatus(order.id, next, requestingUid: uid);
       try {
         await NotificationService.create(
           uid: order.buyerId,

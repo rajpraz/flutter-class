@@ -5,6 +5,7 @@ import 'package:untitled3/models/cart_item.dart';
 import 'package:untitled3/providers/providers.dart';
 import 'package:untitled3/services/auth_service.dart';
 import 'package:untitled3/services/cart_service.dart';
+import 'package:untitled3/services/pricing_service.dart';
 import 'checkoutPage.dart';
 import 'homepage.dart';
 import 'categories.dart';
@@ -138,7 +139,7 @@ class cartPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, st) => Center(child: Text('Could not load cart: $err')),
         data: (cartItems) {
-          final totalPrice = cartItems.fold<double>(0, (sum, item) => sum + item.subtotal);
+          final totalPrice = PricingService.subtotal(cartItems);
 
           return Column(
             children: [
@@ -275,7 +276,8 @@ class cartPage extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text('Delivery Charge', style: TextStyle(fontSize: 16)),
-                            const Text('Rs.80', style: TextStyle(fontSize: 16))
+                            Text('Rs.${PricingService.deliveryFee.toStringAsFixed(0)}',
+                                style: const TextStyle(fontSize: 16))
                           ]),
                       const Divider(height: 16),
                       Row(
@@ -284,7 +286,7 @@ class cartPage extends ConsumerWidget {
                             const Text('Total',
                                 style: TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold)),
-                            Text('Rs.${(totalPrice + 80).toStringAsFixed(2)}',
+                            Text('Rs.${PricingService.total(cartItems).toStringAsFixed(2)}',
                                 style: const TextStyle(
                                     fontSize: 18, fontWeight: FontWeight.bold))
                           ]),

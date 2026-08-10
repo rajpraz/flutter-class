@@ -7,6 +7,47 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // True if this product's stock is being decreased by exactly the
+    // quantity of a matching line item in an order that's being created
+    // (in the same commit) by the caller as its buyer. This ties the
+    // decrement to a real purchase instead of letting any signed-in user
+    // drain a competitor's stock by writing to the product directly.
+    function isReservedByOrder(productId, orderId) {
+      let order = getAfter(/databases/$(database)/documents/orders/$(orderId)).data;
+      let decrement = resource.data.stock - request.resource.data.stock;
+      let expectedItem = {
+        'productId': productId,
+        'name': resource.data.name,
+        'price': resource.data.price,
+        'qty': decrement,
+        'sellerId': resource.data.sellerId,
+      };
+      return decrement > 0 &&
+        order.buyerId == request.auth.uid &&
+        order.items.hasAny([expectedItem]);
+    }
+
+    // True if this product's stock is being increased by exactly the
+    // quantity of a matching line item in an order that's being cancelled
+    // (in the same commit) by the caller as its buyer. This ties the
+    // restore to a real cancellation instead of letting any signed-in
+    // user inflate a competitor's stock.
+    function isRestoredByCancel(productId, orderId) {
+      let order = getAfter(/databases/$(database)/documents/orders/$(orderId)).data;
+      let increment = request.resource.data.stock - resource.data.stock;
+      let expectedItem = {
+        'productId': productId,
+        'name': resource.data.name,
+        'price': resource.data.price,
+        'qty': increment,
+        'sellerId': resource.data.sellerId,
+      };
+      return increment > 0 &&
+        order.buyerId == request.auth.uid &&
+        order.status == 'cancelled' &&
+        order.items.hasAny([expectedItem]);
+    }
+
     // users/{userId} - users can only read/write their own profile doc.
     match /users/{userId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
@@ -15,12 +56,26 @@ service cloud.firestore {
     // products/{productId}
     //  - any signed-in user can read active products
     //  - a seller can also read their own inactive/draft products
-    //  - only the owning seller can create/update/delete their products
+    //  - the owning seller can create/update/delete their products freely
+    //  - any other signed-in user may update ONLY `stock` (+ the
+    //    `lastOrderId` pointer it must be paired with), and only as a
+    //    stock reservation/restore that's independently verified against
+    //    a real order they own in the same commit (see the functions
+    //    above) — never an arbitrary decrement/increment.
     match /products/{productId} {
       allow read: if isSignedIn() &&
         (resource.data.isActive == true || resource.data.sellerId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.sellerId == request.auth.uid ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock', 'lastOrderId']) &&
+         request.resource.data.stock is int &&
+         request.resource.data.stock >= 0 &&
+         request.resource.data.lastOrderId is string &&
+         (isReservedByOrder(productId, request.resource.data.lastOrderId) ||
+          isRestoredByCancel(productId, request.resource.data.lastOrderId)))
+      );
+      allow delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
     }
 
     // carts/{userId}/items/{productId} - a buyer can only read/write their own cart.
@@ -31,7 +86,10 @@ service cloud.firestore {
     // orders/{orderId}
     //  - a buyer can read and create their own orders
     //  - a seller can read orders that contain at least one of their products
-    //  - only a seller involved in the order may update it, and only its status
+    //  - a seller involved in the order may update its status (to advance
+    //    it through the fulfillment pipeline)
+    //  - the buyer may cancel their own order, but only while it's still
+    //    'pending' (before a seller has started fulfilling it)
     match /orders/{orderId} {
       allow read: if isSignedIn() &&
         (resource.data.buyerId == request.auth.uid ||
@@ -40,8 +98,13 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
 
       allow update: if isSignedIn() &&
-        request.auth.uid in resource.data.sellerIds &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        (
+          request.auth.uid in resource.data.sellerIds ||
+          (request.auth.uid == resource.data.buyerId &&
+           resource.data.status == 'pending' &&
+           request.resource.data.status == 'cancelled')
+        );
 
       allow delete: if false;
     }
